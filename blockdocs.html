@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlockDocs — Decentralized Document Vault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --white:#ffffff;--off:#f5f4f0;--gray-100:#ebebeb;--gray-200:#d8d8d8;--gray-400:#a0a0a0;--gray-600:#666;
+  --black:#0f0f0f;--ink:#1a1a1a;--accent:#0052ff;--accent-light:#e8eeff;
+  --green:#00a96e;--green-light:#e6f7f2;--red:#e8002d;--red-light:#fce8ec;
+  --amber:#f59e0b;--amber-light:#fef3e2;--sidebar-w:240px;--topbar-h:60px;
+}
+/* DARK MODE */
+body.dark{
+  --white:#1a1b22;--off:#13141a;--gray-100:#22242e;--gray-200:#2e3040;--gray-400:#5a5f72;--gray-600:#8b91a8;
+  --black:#e8eaf0;--ink:#d0d4e0;--accent:#4d8bff;--accent-light:#1a2340;
+  --green:#00c97e;--green-light:#0d2b1f;--red:#ff4d5e;--red-light:#2b0f13;
+  --amber:#fbbf24;--amber-light:#2b2010;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Manrope',sans-serif;background:var(--off);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;transition:background 0.3s,color 0.3s;}
+*{transition:background-color 0.25s,border-color 0.25s,color 0.2s;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--gray-100);}
+::-webkit-scrollbar-thumb{background:var(--gray-200);border-radius:3px;}
+
+/* TOP BAR */
+.topbar{
+  position:fixed;top:0;left:0;right:0;height:var(--topbar-h);
+  background:var(--white);border-bottom:2px solid var(--black);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;z-index:200;gap:12px;
+}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.logo-badge{width:34px;height:34px;background:var(--black);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.logo-name{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--black);letter-spacing:1px;line-height:1;}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.wallet-status{display:flex;align-items:center;gap:7px;padding:6px 13px;background:var(--off);border:1.5px solid var(--gray-200);border-radius:100px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--gray-600);}
+.wallet-dot{width:6px;height:6px;border-radius:50%;background:var(--gray-200);transition:all 0.3s;}
+.wallet-dot.on{background:var(--green);box-shadow:0 0 0 3px var(--green-light);}
+#walletAddress{color:var(--ink);font-weight:500;}
+.contract-tag{padding:6px 13px;background:var(--off);border:1.5px solid var(--gray-200);border-radius:100px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--gray-600);cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.contract-tag:hover{border-color:var(--accent);color:var(--accent);}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-family:'Manrope',sans-serif;font-size:12px;font-weight:700;cursor:pointer;border:2px solid transparent;transition:all 0.18s ease;letter-spacing:0.03em;white-space:nowrap;}
+.btn-black{background:var(--black);color:var(--white);border-color:var(--black);}
+.btn-black:hover{background:#333;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,0.2);}
+.btn-outline{background:transparent;color:var(--ink);border-color:var(--gray-200);}
+.btn-outline:hover{border-color:var(--black);background:var(--gray-100);}
+.btn-accent{background:var(--accent);color:var(--white);border-color:var(--accent);}
+.btn-accent:hover{background:#003fcc;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,82,255,0.25);}
+.btn-green{background:var(--green);color:var(--white);border-color:var(--green);}
+.btn-green:hover{background:#008a5a;transform:translateY(-1px);}
+.btn-red{background:transparent;color:var(--red);border-color:var(--red);}
+.btn-red:hover{background:var(--red);color:var(--white);}
+.btn-sm{padding:5px 11px;font-size:10px;border-radius:6px;}
+.btn:disabled{opacity:0.35;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+
+/* DARK MODE TOGGLE */
+.theme-toggle{
+  width:36px;height:36px;border-radius:9px;
+  background:var(--off);border:2px solid var(--gray-200);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:16px;transition:all 0.2s;flex-shrink:0;
+}
+.theme-toggle:hover{border-color:var(--accent);background:var(--accent-light);}
+
+/* DOWNLOAD BUTTON */
+.btn-dl{background:transparent;color:var(--green);border-color:var(--green);}
+.btn-dl:hover{background:var(--green);color:var(--white);}
+
+/* SIDEBAR */
+.sidebar{
+  position:fixed;top:var(--topbar-h);left:0;width:var(--sidebar-w);
+  height:calc(100vh - var(--topbar-h));background:var(--white);
+  border-right:2px solid var(--black);padding:20px 0;
+  overflow-y:auto;z-index:100;display:flex;flex-direction:column;gap:2px;
+}
+.sidebar-label{font-size:9px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:var(--gray-400);padding:12px 20px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;font-size:13px;font-weight:600;color:var(--gray-600);cursor:pointer;border:none;background:none;width:100%;text-align:left;border-left:3px solid transparent;transition:all 0.15s;position:relative;}
+.nav-item:hover{color:var(--ink);background:var(--off);}
+.nav-item.active{color:var(--accent);background:var(--accent-light);border-left-color:var(--accent);font-weight:700;}
+.nav-icon{width:30px;height:30px;border-radius:7px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;transition:background 0.15s;}
+.nav-item.active .nav-icon{background:rgba(0,82,255,0.15);}
+.live-pip{display:none;width:6px;height:6px;border-radius:50%;background:var(--green);margin-left:auto;animation:blink 1.4s ease infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+.sidebar-stats{margin-top:auto;padding:16px 20px;border-top:1.5px solid var(--gray-100);}
+.sidebar-stat{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:11px;}
+.sidebar-stat-label{color:var(--gray-600);font-weight:500;}
+.sidebar-stat-val{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--ink);}
+
+/* MAIN */
+.main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);min-height:calc(100vh - var(--topbar-h));padding:40px 36px 80px;}
+.page{display:none;}
+.page.active{display:block;animation:fadeSlide 0.3s ease;}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* PAGE HERO */
+.page-hero{text-align:center;margin-bottom:40px;}
+.page-eyebrow{font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(44px,5.5vw,72px);color:var(--black);line-height:0.95;letter-spacing:1px;margin-bottom:12px;}
+.page-sub{font-size:14px;color:var(--gray-600);max-width:440px;margin:0 auto;line-height:1.7;font-weight:400;}
+
+/* UPLOAD */
+.upload-wrapper{max-width:640px;margin:0 auto;}
+.jwt-strip{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--white);border:2px solid var(--gray-100);border-radius:12px;margin-bottom:24px;}
+.jwt-strip input{flex:1;border:none;background:none;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);outline:none;}
+.jwt-strip input::placeholder{color:var(--gray-400);}
+.jwt-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--gray-400);white-space:nowrap;}
+.drop-zone{border:3px dashed var(--gray-200);border-radius:20px;padding:64px 36px;text-align:center;cursor:pointer;background:var(--white);transition:all 0.25s;margin-bottom:24px;position:relative;}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:var(--accent-light);}
+.drop-zone.has-file{border-color:var(--green);background:var(--green-light);border-style:solid;}
+.dz-icon{font-size:48px;margin-bottom:14px;display:block;transition:transform 0.3s;}
+.drop-zone:hover .dz-icon{transform:translateY(-4px);}
+.dz-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:0.5px;color:var(--black);margin-bottom:5px;}
+.dz-sub{font-size:12px;color:var(--gray-400);font-weight:500;}
+.file-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;background:var(--green);color:var(--white);border-radius:100px;font-size:12px;font-weight:600;margin-top:10px;}
+.upload-fields{background:var(--white);border:2px solid var(--gray-100);border-radius:16px;padding:24px;margin-bottom:20px;}
+.field-row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.field{margin-bottom:16px;}.field:last-child{margin-bottom:0;}
+.field label{display:block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:var(--gray-600);margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;padding:10px 13px;background:var(--off);border:2px solid var(--gray-100);border-radius:9px;font-family:'Manrope',sans-serif;font-size:13px;color:var(--ink);outline:none;transition:all 0.2s;}
+.field select option{background:var(--white);}
+.field textarea{resize:vertical;min-height:68px;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);background:var(--white);box-shadow:0 0 0 4px rgba(0,82,255,0.08);}
+.upload-cta{width:100%;padding:15px;font-size:14px;border-radius:12px;justify-content:center;}
+
+/* HOW STRIP */
+.how-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;max-width:640px;margin:36px auto 0;}
+.how-card{background:var(--white);border:2px solid var(--gray-100);border-radius:14px;padding:14px 10px;text-align:center;transition:border-color 0.2s,transform 0.2s;}
+.how-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+.how-num{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--accent);line-height:1;margin-bottom:5px;}
+.how-text{font-size:9px;color:var(--gray-600);font-weight:600;line-height:1.5;letter-spacing:0.02em;}
+
+/* ACCESS */
+.access-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:860px;margin:0 auto;}
+.panel{background:var(--white);border:2px solid var(--gray-100);border-radius:18px;padding:26px;}
+.panel-title{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:0.5px;color:var(--black);margin-bottom:20px;display:flex;align-items:center;gap:9px;}
+.panel-icon{width:34px;height:34px;background:var(--off);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;border:2px solid var(--gray-100);}
+.access-result{margin-top:14px;padding:13px 16px;border-radius:10px;font-size:12px;font-weight:600;line-height:1.7;display:none;}
+.access-result.active{display:block;animation:fadeSlide 0.3s ease;}
+.ar-ok{background:var(--green-light);border:2px solid var(--green);color:#00754d;}
+.ar-no{background:var(--red-light);border:2px solid var(--red);color:var(--red);}
+
+/* VERIFY */
+.verify-wrapper{max-width:580px;margin:0 auto;}
+.verify-result{margin-top:24px;border-radius:16px;padding:24px;display:none;}
+.verify-result.active{display:block;animation:fadeSlide 0.3s ease;}
+.vr-ok{background:var(--green-light);border:2px solid var(--green);}
+.vr-fail{background:var(--red-light);border:2px solid var(--red);}
+.vr-headline{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:0.5px;margin-bottom:18px;}
+.vr-ok .vr-headline{color:var(--green);}
+.vr-fail .vr-headline{color:var(--red);}
+.vr-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1.5px solid rgba(0,0,0,0.06);font-size:12px;gap:10px;}
+.vr-row:last-child{border-bottom:none;}
+.vr-k{font-weight:700;color:var(--gray-600);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;}
+.vr-v{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink);text-align:right;word-break:break-all;}
+
+/* DOCS */
+.docs-list{display:flex;flex-direction:column;gap:12px;max-width:820px;margin:0 auto;}
+.doc-card{background:var(--white);border:2px solid var(--gray-100);border-radius:16px;padding:20px 22px;display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;transition:all 0.2s;}
+.doc-card:hover{border-color:var(--black);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.07);}
+.dc-name{font-size:15px;font-weight:800;color:var(--black);margin-bottom:3px;}
+.dc-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gray-400);margin-bottom:10px;}
+.dc-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--gray-600);font-weight:500;margin-bottom:12px;}
+.dc-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.badge{padding:3px 9px;border-radius:100px;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;border:2px solid;}
+.b-cert{background:var(--amber-light);border-color:var(--amber);color:#92600a;}
+.b-contract{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+.b-identity{background:var(--red-light);border-color:var(--red);color:var(--red);}
+.b-other{background:var(--gray-100);border-color:var(--gray-200);color:var(--gray-600);}
+.empty-state{text-align:center;padding:70px 20px;}
+.empty-icon{font-family:'Bebas Neue',sans-serif;font-size:72px;color:var(--gray-200);line-height:1;margin-bottom:12px;}
+.empty-txt{font-size:13px;color:var(--gray-400);font-weight:500;}
+
+/* MODALS */
+.overlay{position:fixed;inset:0;background:rgba(15,15,15,0.7);display:none;justify-content:center;align-items:center;z-index:1000;backdrop-filter:blur(6px);}
+.overlay.open{display:flex;}
+.modal{background:var(--white);border:2px solid var(--black);border-radius:20px;padding:32px;width:92%;max-width:460px;animation:fadeSlide 0.3s ease;}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:0.5px;color:var(--black);}
+.modal-close{width:32px;height:32px;background:var(--off);border:2px solid var(--gray-200);border-radius:8px;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--gray-600);transition:all 0.15s;}
+.modal-close:hover{border-color:var(--red);color:var(--red);background:var(--red-light);}
+.modal-note{font-size:12px;color:var(--gray-600);line-height:1.7;margin-bottom:18px;}
+.key-box{background:var(--off);border:2px solid var(--gray-200);border-radius:10px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);word-break:break-all;line-height:1.7;margin:12px 0;}
+.warn-note{font-size:10px;color:var(--red);margin-top:10px;font-weight:600;}
+
+/* LOADER */
+.loader{position:fixed;inset:0;background:rgba(245,244,240,0.92);display:none;justify-content:center;align-items:center;flex-direction:column;gap:16px;z-index:2000;backdrop-filter:blur(4px);}
+.loader.on{display:flex;}
+.spin{width:44px;height:44px;border:3px solid var(--gray-200);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-txt{font-size:12px;font-weight:700;color:var(--gray-600);letter-spacing:0.04em;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;padding:13px 18px;border-radius:12px;font-size:12px;font-weight:600;z-index:3000;display:none;max-width:360px;border:2px solid;animation:slideUp 0.3s ease;line-height:1.5;}
+.toast.on{display:block;}
+@keyframes slideUp{from{transform:translateY(28px);opacity:0}to{transform:translateY(0);opacity:1}}
+.t-ok{background:var(--green-light);border-color:var(--green);color:#00754d;}
+.t-err{background:var(--red-light);border-color:var(--red);color:var(--red);}
+.t-info{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+
+@keyframes revokeOut{0%{opacity:1;max-height:200px;}40%{background:var(--red-light);border-color:var(--red);}100%{opacity:0;max-height:0;padding:0;margin:0;border-width:0;}}
+.card-revoked{animation:revokeOut 1s ease forwards;}
+
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;}.access-grid{grid-template-columns:1fr;}.how-strip{grid-template-columns:repeat(3,1fr);}.field-row-2{grid-template-columns:1fr;}.doc-card{grid-template-columns:1fr;}}
+@media(max-width:580px){.main{padding:24px 16px 60px;}.topbar{padding:0 14px;}.page-title{font-size:42px;}}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <a class="logo" href="#">
+    <div class="logo-badge">📦</div>
+    <div class="logo-name">BlockDocs</div>
+  </a>
+  <div class="topbar-right">
+    <div class="wallet-status"><div class="wallet-dot" id="walletDot"></div><span id="walletAddress">Not Connected</span></div>
+    <div class="contract-tag" id="contractAddress" onclick="openModal('contractModal')">Contract: Not Set</div>
+    <button class="btn btn-outline btn-sm" id="ganacheBtn">Ganache RPC</button>
+    <button class="btn btn-black btn-sm" id="connectBtn">Connect Wallet</button>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle Dark/Light mode">🌙</button>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <span class="sidebar-label">Menu</span>
+  <button class="nav-item active" onclick="switchPage('upload',this)"><span class="nav-icon">↑</span>Upload</button>
+  <button class="nav-item" onclick="switchPage('manage',this)"><span class="nav-icon">🔑</span>Manage Access</button>
+  <button class="nav-item" onclick="switchPage('verify',this)"><span class="nav-icon">✓</span>Verify</button>
+  <button class="nav-item" onclick="switchPage('mydocs',this)"><span class="nav-icon">📄</span>My Documents</button>
+  <button class="nav-item" onclick="switchPage('shared',this)"><span class="nav-icon">⇌</span>Shared With Me<span class="live-pip" id="livePip"></span></button>
+  <div class="sidebar-stats">
+    <div class="sidebar-stat"><span class="sidebar-stat-label">On Chain</span><span class="sidebar-stat-val" id="statTotal">—</span></div>
+    <div class="sidebar-stat"><span class="sidebar-stat-label">My Docs</span><span class="sidebar-stat-val" id="statMine">—</span></div>
+    <div class="sidebar-stat"><span class="sidebar-stat-label">Shared</span><span class="sidebar-stat-val" id="statShared">—</span></div>
+    <div class="sidebar-stat"><span class="sidebar-stat-label">Network</span><span class="sidebar-stat-val" id="statNetwork">—</span></div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- UPLOAD -->
+  <div class="page active" id="page-upload">
+    <div class="page-hero">
+      <div class="page-eyebrow">Decentralized Document Vault</div>
+      <h1 class="page-title">Upload<br>Your Doc</h1>
+      <p class="page-sub">Files are encrypted locally, pinned to IPFS, and anchored permanently on-chain.</p>
+    </div>
+    <div class="upload-wrapper">
+      <div class="jwt-strip">
+        <span class="jwt-label">Pinata JWT</span>
+        <input type="password" id="pinataJwt" placeholder="eyJhbGci… paste your JWT here">
+        <button class="btn btn-outline btn-sm" onclick="savePinataJwt()">Save</button>
+      </div>
+      <div class="drop-zone" id="uploadArea">
+        <span class="dz-icon">📁</span>
+        <div class="dz-title">Drop a file here</div>
+        <div class="dz-sub">or click to browse · Certificates, Contracts, ID docs</div>
+        <div id="fileChip" style="display:none;" class="file-chip">✔ <span id="chipName"></span></div>
+      </div>
+      <input type="file" id="fileInput" style="display:none">
+      <div class="upload-fields">
+        <div class="field-row-2">
+          <div class="field"><label>Description / Title</label><input type="text" id="docDescription" placeholder="e.g. Bachelor's Degree"></div>
+          <div class="field"><label>Category</label><select id="docCategory"><option value="certificate">Certificate</option><option value="contract">Contract</option><option value="identity">Identity</option><option value="other">Other</option></select></div>
+        </div>
+      </div>
+      <button class="btn btn-accent upload-cta" id="uploadBtn" disabled>Upload to IPFS + Blockchain</button>
+    </div>
+    <div class="how-strip">
+      <div class="how-card"><div class="how-num">01</div><div class="how-text">SHA-256 hash computed in browser</div></div>
+      <div class="how-card"><div class="how-num">02</div><div class="how-text">AES-256 encryption client-side</div></div>
+      <div class="how-card"><div class="how-num">03</div><div class="how-text">Encrypted file pinned to IPFS</div></div>
+      <div class="how-card"><div class="how-num">04</div><div class="how-text">Metadata stored on blockchain</div></div>
+      <div class="how-card"><div class="how-num">05</div><div class="how-text">Grant or revoke access anytime</div></div>
+    </div>
+  </div>
+
+  <!-- MANAGE ACCESS -->
+  <div class="page" id="page-manage">
+    <div class="page-hero"><div class="page-eyebrow">Permissions</div><h1 class="page-title">Manage<br>Access</h1></div>
+    <div class="access-grid">
+      <div class="panel">
+        <div class="panel-title"><span class="panel-icon">🔑</span>Grant / Revoke</div>
+        <div class="field"><label>Document ID</label><input type="number" id="shareDocId" placeholder="Enter document ID"></div>
+        <div class="field"><label>Recipient Wallet</label><input type="text" id="recipientAddress" placeholder="0x…"></div>
+        <div class="field"><label>Expiry (optional)</label><input type="text" id="expiryInput" placeholder="YYYY-MM-DDThh:mm"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-green" id="grantAccessBtn">✓ Grant</button>
+          <button class="btn btn-red" id="revokeAccessBtn">✕ Revoke</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><span class="panel-icon">🔍</span>Check Access</div>
+        <div class="field"><label>Document ID</label><input type="number" id="checkDocId" placeholder="Enter document ID"></div>
+        <div class="field"><label>Wallet to Check</label><input type="text" id="checkAddress" placeholder="0x…"></div>
+        <button class="btn btn-accent" id="checkAccessBtn">Check Access</button>
+        <div class="access-result" id="accessResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VERIFY -->
+  <div class="page" id="page-verify">
+    <div class="page-hero"><div class="page-eyebrow">Authenticity</div><h1 class="page-title">Verify<br>Document</h1><p class="page-sub">Anyone can verify without a wallet. Use the Document ID and IPFS hash from the issuer.</p></div>
+    <div class="verify-wrapper">
+      <div class="panel">
+        <div class="field"><label>Document ID</label><input type="number" id="verifyDocId" placeholder="Enter document ID"></div>
+        <div class="field"><label>IPFS Hash (CID)</label><input type="text" id="verifyIpfsHash" placeholder="QmXxx… or bafyre…"></div>
+        <div class="field">
+          <label>Re-verify File Integrity (optional)</label>
+          <div class="drop-zone" id="verifyUploadArea" style="padding:24px;margin-bottom:0;">
+            <span style="font-size:26px;display:block;margin-bottom:6px;">🔏</span>
+            <div class="dz-sub">Drop original file to check its hash</div>
+            <div id="verifyChip" style="display:none;" class="file-chip">✔ <span id="verifyChipName"></span></div>
+          </div>
+          <input type="file" id="verifyFileInput" style="display:none">
+        </div>
+        <button class="btn btn-accent" id="verifyBtn" style="width:100%;justify-content:center;padding:14px;">Verify on Blockchain</button>
+      </div>
+      <div class="verify-result" id="verifyResult">
+        <div class="vr-headline" id="verifyStatus"></div>
+        <div class="vr-row"><span class="vr-k">Document Name</span><span class="vr-v" id="vFileName">—</span></div>
+        <div class="vr-row"><span class="vr-k">Category</span><span class="vr-v" id="vCategory">—</span></div>
+        <div class="vr-row"><span class="vr-k">Owner</span><span class="vr-v" id="vOwner">—</span></div>
+        <div class="vr-row"><span class="vr-k">Uploaded</span><span class="vr-v" id="vTimestamp">—</span></div>
+        <div class="vr-row"><span class="vr-k">IPFS Match</span><span class="vr-v" id="vIpfsMatch">—</span></div>
+        <div class="vr-row"><span class="vr-k">File Hash</span><span class="vr-v" id="vHashMatch">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MY DOCS -->
+  <div class="page" id="page-mydocs">
+    <div class="page-hero"><div class="page-eyebrow">Your Vault</div><h1 class="page-title">My<br>Documents</h1></div>
+    <div class="docs-list" id="myDocuments"><div class="empty-state"><div class="empty-icon">EMPTY</div><div class="empty-txt">Connect your wallet to see documents</div></div></div>
+  </div>
+
+  <!-- SHARED -->
+  <div class="page" id="page-shared">
+    <div class="page-hero"><div class="page-eyebrow">Shared Access</div><h1 class="page-title">Shared<br>With Me</h1></div>
+    <div class="docs-list" id="sharedDocuments"><div class="empty-state"><div class="empty-icon">NONE</div><div class="empty-txt">No documents shared with you yet</div></div></div>
+  </div>
+
+</main>
+
+<!-- MODALS -->
+<div class="overlay" id="ganacheModal">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Ganache RPC</div><button class="modal-close" onclick="closeModal('ganacheModal')">×</button></div>
+    <p class="modal-note">Connect directly to your local Ganache node. Find the RPC SERVER address and any account address.</p>
+    <div class="field"><label>RPC URL</label><input type="text" id="ganacheRpc" value="http://127.0.0.1:7545" placeholder="http://127.0.0.1:7545"></div>
+    <div class="field"><label>Account Address</label><input type="text" id="ganacheAccount" placeholder="0x…"></div>
+    <div class="field"><label>Private Key</label><input type="text" id="ganachePrivKey" placeholder="0x…"></div>
+    <button class="btn btn-black" onclick="connectGanache()" style="width:100%;justify-content:center;padding:13px;">Connect to Ganache</button>
+  </div>
+</div>
+
+<div class="overlay" id="contractModal">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Contract Setup</div><button class="modal-close" onclick="closeModal('contractModal')">×</button></div>
+    <p class="modal-note">Deploy DocumentSharing.sol via Remix + Ganache, then paste the deployed contract address.</p>
+    <div class="field"><label>Contract Address</label><input type="text" id="contractAddressInput" placeholder="0x…"></div>
+    <button class="btn btn-black" onclick="saveContractAddress()" style="width:100%;justify-content:center;padding:13px;">Save & Connect</button>
+  </div>
+</div>
+
+<div class="overlay" id="keyShareModal">
+  <div class="modal" style="border-color:var(--accent)">
+    <div class="modal-head"><div class="modal-title" style="color:var(--accent)">Share Decryption Key</div><button class="modal-close" onclick="closeModal('keyShareModal')">×</button></div>
+    <p class="modal-note">The file is <strong>encrypted</strong>. Send this key privately to the person you granted access (email, Signal, etc).</p>
+    <div class="key-box" id="keyShareDisplay">—</div>
+    <div style="display:flex;gap:10px;"><button class="btn btn-accent" onclick="copyKeyShare()">Copy Key</button><button class="btn btn-outline" onclick="closeModal('keyShareModal')">Done</button></div>
+    <div class="warn-note">⚠ Shown only once — copy before closing.</div>
+  </div>
+</div>
+
+<div class="overlay" id="decryptModal">
+  <div class="modal" style="border-color:var(--green)">
+    <div class="modal-head"><div class="modal-title" style="color:var(--green)">Decrypt File</div><button class="modal-close" onclick="closeModal('decryptModal')">×</button></div>
+    <p class="modal-note">Paste the decryption key from the document owner to open the file.</p>
+    <div class="field"><label>Decryption Key</label><input type="text" id="decryptKeyInput" placeholder="Paste key here…"></div>
+    <div style="display:flex;gap:10px;"><button class="btn btn-green" onclick="doDecryptAndView()">Decrypt & Open</button><button class="btn btn-outline" onclick="closeModal('decryptModal')">Cancel</button></div>
+  </div>
+</div>
+
+<div class="loader" id="loader"><div class="spin"></div><div class="loader-txt" id="loaderTxt">Processing…</div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+<script>
+let web3,contract,currentAccount,verifyFileHash=null;
+const CONTRACT_ABI=[{"inputs":[{"internalType":"string","name":"_ipfsHash","type":"string"},{"internalType":"string","name":"_fileName","type":"string"},{"internalType":"string","name":"_description","type":"string"},{"internalType":"string","name":"_category","type":"string"},{"internalType":"bytes32","name":"_fileHash","type":"bytes32"}],"name":"uploadDocument","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_documentId","type":"uint256"},{"internalType":"address","name":"_recipient","type":"address"},{"internalType":"uint256","name":"_expiresAt","type":"uint256"}],"name":"grantAccess","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_documentId","type":"uint256"},{"internalType":"address","name":"_recipient","type":"address"}],"name":"revokeAccess","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_documentId","type":"uint256"}],"name":"deleteDocument","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_documentId","type":"uint256"}],"name":"getDocument","outputs":[{"internalType":"string","name":"ipfsHash","type":"string"},{"internalType":"string","name":"fileName","type":"string"},{"internalType":"string","name":"description","type":"string"},{"internalType":"string","name":"category","type":"string"},{"internalType":"bytes32","name":"fileHash","type":"bytes32"},{"internalType":"uint256","name":"timestamp","type":"uint256"},{"internalType":"address","name":"owner","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_documentId","type":"uint256"},{"internalType":"string","name":"_ipfsHash","type":"string"},{"internalType":"bytes32","name":"_fileHash","type":"bytes32"}],"name":"verifyDocument","outputs":[{"internalType":"bool","name":"valid","type":"bool"},{"internalType":"address","name":"storedOwner","type":"address"},{"internalType":"uint256","name":"uploadTime","type":"uint256"},{"internalType":"string","name":"fileName","type":"string"},{"internalType":"string","name":"category","type":"string"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_documentId","type":"uint256"},{"internalType":"address","name":"_user","type":"address"}],"name":"checkAccess","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_documentId","type":"uint256"},{"internalType":"address","name":"_user","type":"address"}],"name":"getAccessDetails","outputs":[{"internalType":"bool","name":"canView","type":"bool"},{"internalType":"uint256","name":"grantedAt","type":"uint256"},{"internalType":"uint256","name":"expiresAt","type":"uint256"},{"internalType":"bool","name":"expired","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_owner","type":"address"}],"name":"getMyDocuments","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"getSharedWithMe","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getTotalDocuments","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"documentCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"documentId","type":"uint256"},{"indexed":false,"name":"ipfsHash","type":"string"},{"indexed":false,"name":"fileName","type":"string"},{"indexed":false,"name":"fileHash","type":"bytes32"},{"indexed":true,"name":"owner","type":"address"},{"indexed":false,"name":"timestamp","type":"uint256"}],"name":"DocumentUploaded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"documentId","type":"uint256"},{"indexed":true,"name":"owner","type":"address"},{"indexed":true,"name":"recipient","type":"address"},{"indexed":false,"name":"grantedAt","type":"uint256"},{"indexed":false,"name":"expiresAt","type":"uint256"}],"name":"AccessGranted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"documentId","type":"uint256"},{"indexed":true,"name":"owner","type":"address"},{"indexed":true,"name":"recipient","type":"address"},{"indexed":false,"name":"timestamp","type":"uint256"}],"name":"AccessRevoked","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"documentId","type":"uint256"},{"indexed":true,"name":"verifier","type":"address"},{"indexed":false,"name":"success","type":"bool"},{"indexed":false,"name":"timestamp","type":"uint256"}],"name":"DocumentVerified","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"documentId","type":"uint256"},{"indexed":true,"name":"owner","type":"address"},{"indexed":false,"name":"timestamp","type":"uint256"}],"name":"DocumentDeleted","type":"event"}];
+
+function switchPage(name,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById('page-'+name).classList.add('active');if(btn)btn.classList.add('active');}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function isValidEth(a){return/^0x[0-9a-fA-F]{40}$/.test(a);}
+function loadContractAddress(){const s=localStorage.getItem('contractAddress');if(s){document.getElementById('contractAddressInput').value=s;updateContractUI(s);}return s||null;}
+function updateContractUI(addr){const el=document.getElementById('contractAddress');if(addr&&isValidEth(addr)){el.textContent=`Contract: ${addr.substring(0,6)}…${addr.substring(38)}`;el.style.borderColor='var(--accent)';el.style.color='var(--accent)';}else{el.textContent='Contract: Not Set';el.style.borderColor='';el.style.color='';}}
+function saveContractAddress(){const a=document.getElementById('contractAddressInput').value.trim();if(!a){toast('Enter a contract address','err');return;}if(!isValidEth(a)){toast('Invalid address format','err');return;}localStorage.setItem('contractAddress',a);updateContractUI(a);closeModal('contractModal');if(currentAccount&&web3){initContract(a);loadDocuments();}else toast('Contract saved. Connect wallet to continue.','info');}
+function initContract(addr){if(!addr){openModal('contractModal');return false;}try{contract=new web3.eth.Contract(CONTRACT_ABI,addr);return true;}catch(e){toast('Contract init error: '+e.message,'err');return false;}}
+async function onConnected(account){currentAccount=account;document.getElementById('walletAddress').textContent=`${account.substring(0,6)}…${account.substring(38)}`;document.getElementById('walletDot').classList.add('on');document.getElementById('connectBtn').textContent='Connected ✔';document.getElementById('ganacheBtn').textContent='Connected ✔';try{const cid=await web3.eth.getChainId();const nets={1:'Mainnet',3:'Ropsten',4:'Rinkeby',5:'Goerli',1337:'Ganache',5777:'Ganache',31337:'Hardhat'};document.getElementById('statNetwork').textContent=nets[cid]||`#${cid}`;}catch(_){}const addr=loadContractAddress();if(addr){if(initContract(addr))loadDocuments();}else openModal('contractModal');}
+async function initWeb3(){if(typeof window.ethereum==='undefined'){toast('MetaMask not found. Use Ganache RPC.','err');openModal('ganacheModal');return;}try{web3=new Web3(window.ethereum);const accs=await window.ethereum.request({method:'eth_requestAccounts'});if(!accs.length){toast('No accounts in MetaMask','err');return;}await onConnected(accs[0]);window.ethereum.on('accountsChanged',a=>{if(!a.length)location.reload();else{currentAccount=a[0];document.getElementById('walletAddress').textContent=`${a[0].substring(0,6)}…${a[0].substring(38)}`;loadDocuments();}});}catch(e){toast('MetaMask error: '+e.message,'err');}}
+async function connectGanache(){const rpc=document.getElementById('ganacheRpc').value.trim(),acc=document.getElementById('ganacheAccount').value.trim(),pk=document.getElementById('ganachePrivKey').value.trim();if(!rpc||!acc||!pk){toast('Fill all fields','err');return;}if(!isValidEth(acc)){toast('Invalid account address','err');return;}try{showLoader(true,'Connecting…');web3=new Web3(new Web3.providers.HttpProvider(rpc));await web3.eth.getBlockNumber();web3.eth.accounts.wallet.add(pk.startsWith('0x')?pk:'0x'+pk);web3.eth.defaultAccount=acc;sessionStorage.setItem('ganacheRpc',rpc);sessionStorage.setItem('ganacheAccount',acc);showLoader(false);closeModal('ganacheModal');await onConnected(acc);toast('Connected to Ganache.','ok');}catch(e){showLoader(false);toast('Ganache error: '+e.message,'err');}}
+document.getElementById('connectBtn').addEventListener('click',()=>{if(!currentAccount)initWeb3();});
+document.getElementById('ganacheBtn').addEventListener('click',()=>{if(!currentAccount)openModal('ganacheModal');});
+window.addEventListener('load',async()=>{const gr=sessionStorage.getItem('ganacheRpc'),ga=sessionStorage.getItem('ganacheAccount');if(gr&&ga){document.getElementById('ganacheRpc').value=gr;document.getElementById('ganacheAccount').value=ga;}else if(typeof window.ethereum!=='undefined'&&localStorage.getItem('contractAddress'))initWeb3();});
+async function sendTx(call,from){let gas;try{gas=Math.ceil(await call.estimateGas({from})*1.3);}catch(e){gas=500000;}return call.send({from,gas});}
+function savePinataJwt(){const j=document.getElementById('pinataJwt').value.trim();if(!j){toast('Paste your JWT first','err');return;}localStorage.setItem('pinataJwt',j);document.getElementById('pinataJwt').value='';document.getElementById('pinataJwt').placeholder='✔ JWT saved — paste new to update';toast('Pinata JWT saved.','ok');}
+window.addEventListener('DOMContentLoaded',()=>{if(localStorage.getItem('pinataJwt'))document.getElementById('pinataJwt').placeholder='✔ JWT already saved';});
+async function uploadToPinata(file,jwt){const fd=new FormData();fd.append('file',file);fd.append('pinataMetadata',JSON.stringify({name:file.name}));const r=await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS',{method:'POST',headers:{'Authorization':`Bearer ${jwt}`},body:fd});if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(`Pinata ${r.status}: ${e.error?.details||e.error||r.statusText}`);}return(await r.json()).IpfsHash;}
+async function hashFile(file){const d=await crypto.subtle.digest('SHA-256',await file.arrayBuffer());return'0x'+Array.from(new Uint8Array(d)).map(b=>b.toString(16).padStart(2,'0')).join('');}
+async function genKey(){const k=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);return Array.from(new Uint8Array(await crypto.subtle.exportKey('raw',k))).map(b=>b.toString(16).padStart(2,'0')).join('');}
+async function impKey(hex){return crypto.subtle.importKey('raw',new Uint8Array(hex.match(/.{1,2}/g).map(b=>parseInt(b,16))),{name:'AES-GCM'},false,['encrypt','decrypt']);}
+async function encBuf(buf,hex){const k=await impKey(hex),iv=crypto.getRandomValues(new Uint8Array(12));const e=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,buf);return{ivHex:Array.from(iv).map(b=>b.toString(16).padStart(2,'0')).join(''),enc:new Uint8Array(e)};}
+async function decBuf(ivHex,enc,hex){const k=await impKey(hex),iv=new Uint8Array(ivHex.match(/.{1,2}/g).map(b=>parseInt(b,16)));return crypto.subtle.decrypt({name:'AES-GCM',iv},k,enc);}
+function pack(ivHex,enc){const iv=new TextEncoder().encode(ivHex),m=new Uint8Array(iv.length+enc.length);m.set(iv,0);m.set(enc,iv.length);return new Blob([m],{type:'application/octet-stream'});}
+async function unpack(ipfs){const r=await fetch(`https://ipfs.io/ipfs/${ipfs}`);if(!r.ok)throw new Error('IPFS fetch failed');const a=new Uint8Array(await r.arrayBuffer());return{ivHex:new TextDecoder().decode(a.slice(0,24)),enc:a.slice(24)};}
+function saveKey(id,k){localStorage.setItem(`ek_${id}`,k);}
+function loadKey(id){return localStorage.getItem(`ek_${id}`)||sessionStorage.getItem(`ek_${id}`)||null;}
+let _shareKey='';
+function showKeyShare(k){_shareKey=k;document.getElementById('keyShareDisplay').textContent=k;openModal('keyShareModal');}
+function copyKeyShare(){navigator.clipboard.writeText(_shareKey).then(()=>toast('Key copied!','ok'));}
+let _dDocId=null,_dIpfs=null,_dName=null;
+function openDecryptModal(id,ipfs,name){_dDocId=id;_dIpfs=ipfs;_dName=name;document.getElementById('decryptKeyInput').value=loadKey(id)||'';openModal('decryptModal');}
+async function doDecryptAndView(){const hex=document.getElementById('decryptKeyInput').value.trim();if(!hex){toast('Paste the decryption key','err');return;}try{showLoader(true,'Decrypting…');const{ivHex,enc}=await unpack(_dIpfs);const plain=await decBuf(ivHex,enc,hex);sessionStorage.setItem(`ek_${_dDocId}`,hex);const ext=(_dName||'').split('.').pop().toLowerCase();const mime={pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',txt:'text/plain',mp4:'video/mp4'}[ext]||'application/octet-stream';window.open(URL.createObjectURL(new Blob([plain],{type:mime})),'_blank');showLoader(false);closeModal('decryptModal');toast('File decrypted and opened!','ok');}catch(e){showLoader(false);toast('Wrong key or corrupted file.','err');}}
+let _pollInt=null,_sharedIds=[];
+function startPoll(ids){_sharedIds=ids.map(String);stopPoll();if(!_sharedIds.length)return;document.getElementById('livePip').style.display='block';_pollInt=setInterval(poll,20000);}
+function stopPoll(){if(_pollInt){clearInterval(_pollInt);_pollInt=null;}document.getElementById('livePip').style.display='none';}
+async function poll(){if(!contract||!currentAccount)return;for(const id of[..._sharedIds]){try{const ok=await contract.methods.checkAccess(id,currentAccount).call();if(!ok){const card=document.querySelector(`.doc-card[data-id="${id}"]`);if(card){card.style.borderColor='var(--red)';card.style.background='var(--red-light)';card.innerHTML=`<div style="text-align:center;padding:20px;color:var(--red);font-weight:700;font-size:13px;">Access revoked by owner<br><span style="font-size:11px;font-weight:400;color:var(--gray-400)">Document #${id}</span></div>`;toast(`Access to doc #${id} was revoked.`,'err');setTimeout(()=>{card.classList.add('card-revoked');setTimeout(()=>{card.remove();_sharedIds=_sharedIds.filter(x=>x!==id);document.getElementById('statShared').textContent=_sharedIds.length;if(!_sharedIds.length)stopPoll();},900);},1600);}}}catch(e){console.warn('poll err',id,e.message);}}}
+const uploadArea=document.getElementById('uploadArea'),fileInput=document.getElementById('fileInput');
+uploadArea.addEventListener('click',()=>fileInput.click());
+uploadArea.addEventListener('dragover',e=>{e.preventDefault();uploadArea.classList.add('drag-over');});
+uploadArea.addEventListener('dragleave',()=>uploadArea.classList.remove('drag-over'));
+uploadArea.addEventListener('drop',e=>{e.preventDefault();uploadArea.classList.remove('drag-over');if(e.dataTransfer.files[0])setFile(e.dataTransfer.files[0]);});
+fileInput.addEventListener('change',e=>{if(e.target.files[0])setFile(e.target.files[0]);});
+function setFile(file){document.getElementById('chipName').textContent=`${file.name} (${(file.size/1024).toFixed(1)}KB)`;document.getElementById('fileChip').style.display='inline-flex';uploadArea.classList.add('has-file');document.getElementById('uploadBtn').disabled=false;}
+document.getElementById('uploadBtn').addEventListener('click',async()=>{
+  const file=fileInput.files[0];if(!file){toast('Select a file first','err');return;}
+  if(!contract){toast('Contract not initialized','err');openModal('contractModal');return;}
+  const jwt=localStorage.getItem('pinataJwt');if(!jwt){toast('Enter and save your Pinata JWT first','err');return;}
+  try{showLoader(true,'Computing hash…');const fileHash=await hashFile(file);showLoader(true,'Encrypting…');const encKey=await genKey(),{ivHex,enc}=await encBuf(await file.arrayBuffer(),encKey);showLoader(true,'Uploading to IPFS…');const ipfs=await uploadToPinata(new File([pack(ivHex,enc)],file.name+'.enc',{type:'application/octet-stream'}),jwt);const desc=document.getElementById('docDescription').value.trim()||file.name;const cat=document.getElementById('docCategory').value;showLoader(true,'Storing on blockchain…');const tx=await sendTx(contract.methods.uploadDocument(ipfs,file.name,desc,cat,fileHash),currentAccount);const rawId=tx.events?.DocumentUploaded?.returnValues?.documentId||tx.logs[0]?.topics[1];const docId=rawId?parseInt(rawId,16)||parseInt(rawId):null;if(docId)saveKey(docId,encKey);const total=await contract.methods.getTotalDocuments().call();saveKey(total,encKey);toast(`Uploaded! CID: ${ipfs.substring(0,14)}…`,'ok');fileInput.value='';uploadArea.classList.remove('has-file');document.getElementById('fileChip').style.display='none';document.getElementById('uploadBtn').disabled=true;document.getElementById('docDescription').value='';loadDocuments();showLoader(false);}catch(e){showLoader(false);toast('Upload error: '+e.message,'err');}
+});
+document.getElementById('grantAccessBtn').addEventListener('click',async()=>{const id=document.getElementById('shareDocId').value,rec=document.getElementById('recipientAddress').value.trim(),exp=document.getElementById('expiryInput').value.trim();if(!id||!rec){toast('Enter doc ID and recipient','err');return;}if(!contract){toast('Contract not initialized','err');return;}let expiresAt=0;if(exp){const ts=Math.floor(new Date(exp).getTime()/1000);if(isNaN(ts)||ts<=Date.now()/1000){toast('Expiry must be a future date','err');return;}expiresAt=ts;}try{showLoader(true,'Granting access…');await sendTx(contract.methods.grantAccess(id,rec,expiresAt),currentAccount);toast('Access granted!','ok');document.getElementById('shareDocId').value='';document.getElementById('recipientAddress').value='';document.getElementById('expiryInput').value='';showLoader(false);const k=loadKey(id);if(k)showKeyShare(k);else toast('Access granted. No local key found.','info');}catch(e){showLoader(false);toast('Grant error: '+e.message,'err');}});
+document.getElementById('revokeAccessBtn').addEventListener('click',async()=>{const id=document.getElementById('shareDocId').value,rec=document.getElementById('recipientAddress').value.trim();if(!id||!rec){toast('Enter doc ID and recipient','err');return;}if(!contract){toast('Contract not initialized','err');return;}try{showLoader(true,'Revoking…');await sendTx(contract.methods.revokeAccess(id,rec),currentAccount);toast('Access revoked.','ok');showLoader(false);}catch(e){showLoader(false);toast('Revoke error: '+e.message,'err');}});
+document.getElementById('checkAccessBtn').addEventListener('click',async()=>{const id=document.getElementById('checkDocId').value,addr=document.getElementById('checkAddress').value.trim();const el=document.getElementById('accessResult');if(!id||!addr){toast('Enter doc ID and address','err');return;}if(!contract){toast('Contract not initialized','err');return;}try{const ok=await contract.methods.checkAccess(id,addr).call();let det=null;if(ok){try{det=await contract.methods.getAccessDetails(id,addr).call();}catch(_){}}el.className='access-result active '+(ok?'ar-ok':'ar-no');if(ok&&det){el.innerHTML=`<strong>Access Granted</strong><br>Granted: ${new Date(det.grantedAt*1000).toLocaleString()}<br>Expires: ${det.expiresAt==0?'Never':new Date(det.expiresAt*1000).toLocaleString()}${det.expired?' <span style="color:var(--red)">(expired)</span>':''}`;}else{el.innerHTML='<strong>No Access</strong> — this address cannot view the document.';}}catch(e){toast('Check error: '+e.message,'err');}});
+const vzArea=document.getElementById('verifyUploadArea'),vzInput=document.getElementById('verifyFileInput');
+vzArea.addEventListener('click',()=>vzInput.click());vzArea.addEventListener('dragover',e=>{e.preventDefault();vzArea.classList.add('drag-over');});vzArea.addEventListener('dragleave',()=>vzArea.classList.remove('drag-over'));vzArea.addEventListener('drop',async e=>{e.preventDefault();vzArea.classList.remove('drag-over');if(e.dataTransfer.files[0])await setVzFile(e.dataTransfer.files[0]);});vzInput.addEventListener('change',async e=>{if(e.target.files[0])await setVzFile(e.target.files[0]);});
+async function setVzFile(f){verifyFileHash=await hashFile(f);document.getElementById('verifyChipName').textContent=f.name;document.getElementById('verifyChip').style.display='inline-flex';}
+document.getElementById('verifyBtn').addEventListener('click',async()=>{const id=document.getElementById('verifyDocId').value,ipfs=document.getElementById('verifyIpfsHash').value.trim();if(!id||!ipfs){toast('Enter doc ID and IPFS hash','err');return;}if(!contract){toast('Contract not initialized','err');return;}const fhp=verifyFileHash||'0x0000000000000000000000000000000000000000000000000000000000000000';try{showLoader(true,'Verifying on-chain…');const r=await contract.methods.verifyDocument(id,ipfs,fhp).call({from:currentAccount});showLoader(false);const valid=r.valid||r[0],owner=r.storedOwner||r[1],ts=r.uploadTime||r[2],fn=r.fileName||r[3],cat=r.category||r[4];const el=document.getElementById('verifyResult');el.className='verify-result active '+(valid?'vr-ok':'vr-fail');document.getElementById('verifyStatus').textContent=valid?'✓ Document Verified':'✕ Verification Failed';document.getElementById('vFileName').textContent=fn||'—';document.getElementById('vCategory').textContent=cat||'—';document.getElementById('vOwner').textContent=owner?`${owner.substring(0,10)}…${owner.substring(36)}`:'—';document.getElementById('vTimestamp').textContent=ts>0?new Date(ts*1000).toLocaleString():'—';document.getElementById('vIpfsMatch').textContent=valid?'Match ✓':'Mismatch ✕';document.getElementById('vHashMatch').textContent=verifyFileHash?(valid?'Integrity confirmed':'File altered'):'Not checked';try{await sendTx(contract.methods.verifyDocument(id,ipfs,fhp),currentAccount);}catch(_){}}catch(e){showLoader(false);toast('Verify error: '+e.message,'err');}});
+async function loadDocuments(){if(!contract||!currentAccount)return;try{const total=await contract.methods.getTotalDocuments().call();document.getElementById('statTotal').textContent=total;const myIds=await contract.methods.getMyDocuments(currentAccount).call();document.getElementById('statMine').textContent=myIds.length;const shIds=await contract.methods.getSharedWithMe(currentAccount).call();document.getElementById('statShared').textContent=shIds.length;const myEl=document.getElementById('myDocuments');myEl.innerHTML='';if(!myIds.length){myEl.innerHTML=`<div class="empty-state"><div class="empty-icon">EMPTY</div><div class="empty-txt">No documents uploaded yet</div></div>`;}else{for(const id of myIds){try{myEl.innerHTML+=buildCard(id,await contract.methods.getDocument(id).call({from:currentAccount}),true);}catch(e){console.error(e);}}}const shEl=document.getElementById('sharedDocuments');shEl.innerHTML='';if(!shIds.length){shEl.innerHTML=`<div class="empty-state"><div class="empty-icon">NONE</div><div class="empty-txt">No documents shared with you yet</div></div>`;stopPoll();}else{for(const id of shIds){try{shEl.innerHTML+=buildCard(id,await contract.methods.getDocument(id).call({from:currentAccount}),false);}catch(e){console.error(e);}}startPoll(shIds);}}catch(e){console.error(e);toast('Error loading documents: '+e.message,'err');}}
+function buildCard(id,doc,isOwner){const ipfs=doc[0]||doc.ipfsHash,name=doc[1]||doc.fileName,desc=doc[2]||doc.description||'',cat=doc[3]||doc.category||'other',ts=doc[5]||doc.timestamp,owner=doc[6]||doc.owner,date=new Date(ts*1000).toLocaleString();const bc={certificate:'b-cert',contract:'b-contract',identity:'b-identity',other:'b-other'}[cat]||'b-other';return`<div class="doc-card" data-id="${id}"><div><div class="dc-name">${name}</div><div class="dc-id">ID #${id}${desc?' · '+desc:''}</div><div class="dc-meta"><span>📅 ${date}</span><span>👤 ${owner.substring(0,8)}…${owner.substring(36)}</span><span title="${ipfs}">📎 ${ipfs.substring(0,16)}…</span></div><div class="dc-actions">${isOwner?`<button class="btn btn-outline btn-sm" onclick="ownerView(${id},'${ipfs}','${name}')">View</button>`:`<button class="btn btn-outline btn-sm" onclick="openDecryptModal(${id},'${ipfs}','${name}')">Decrypt & View</button>`}<button class="btn btn-dl btn-sm" onclick="downloadDoc(${id},'${ipfs}','${name}')">⬇ Download</button><button class="btn btn-outline btn-sm" onclick="prefillVerify('${ipfs}',${id})">Verify</button>${isOwner?`<button class="btn btn-outline btn-sm" onclick="prefillShare(${id})">Share</button><button class="btn btn-red btn-sm" onclick="delDoc(${id})">Delete</button>`:''}<button class="btn btn-outline btn-sm" onclick="copyTxt('${ipfs}',this)">Copy CID</button></div></div><span class="badge ${bc}">${cat}</span></div>`;}
+function copyTxt(t,btn){navigator.clipboard.writeText(t).then(()=>{const o=btn.textContent;btn.textContent='Copied!';setTimeout(()=>btn.textContent=o,2000);});}
+async function ownerView(id,ipfs,name){const k=loadKey(id);if(!k){toast('No local key found. Different device?','err');return;}_dDocId=id;_dIpfs=ipfs;_dName=name;document.getElementById('decryptKeyInput').value=k;openModal('decryptModal');}
+function prefillVerify(ipfs,id){document.getElementById('verifyDocId').value=id;document.getElementById('verifyIpfsHash').value=ipfs;switchPage('verify',document.querySelectorAll('.nav-item')[2]);}
+function prefillShare(id){document.getElementById('shareDocId').value=id;switchPage('manage',document.querySelectorAll('.nav-item')[1]);}
+async function delDoc(id){if(!confirm(`Delete document #${id}? Cannot be undone.`))return;if(!contract){toast('Contract not initialized','err');return;}try{showLoader(true,'Deleting…');await sendTx(contract.methods.deleteDocument(id),currentAccount);toast('Document deleted.','ok');loadDocuments();showLoader(false);}catch(e){showLoader(false);toast('Delete error: '+e.message,'err');}}
+/* ── DARK / LIGHT MODE ── */
+function toggleTheme(){
+  const isDark=document.body.classList.toggle('dark');
+  document.getElementById('themeToggle').textContent=isDark?'☀️':'🌙';
+  localStorage.setItem('theme',isDark?'dark':'light');
+}
+// Apply saved theme on load
+(function(){
+  const saved=localStorage.getItem('theme');
+  if(saved==='dark'){document.body.classList.add('dark');document.getElementById('themeToggle').textContent='☀️';}
+})();
+
+/* ── DOWNLOAD ENCRYPTED FILE FROM IPFS ── */
+async function downloadDoc(id,ipfs,fileName){
+  const encKey=loadKey(id);
+  if(!encKey){
+    // No key — offer to download the raw encrypted file
+    if(!confirm(`No local decryption key found for doc #${id}.\n\nDownload the raw encrypted file from IPFS instead?`))return;
+    try{
+      showLoader(true,'Fetching from IPFS…');
+      const r=await fetch(`https://ipfs.io/ipfs/${ipfs}`);
+      if(!r.ok)throw new Error('IPFS fetch failed: '+r.status);
+      const blob=await r.blob();
+      triggerDownload(blob,fileName+'.encrypted');
+      showLoader(false);
+      toast('Encrypted file downloaded (no key available to decrypt).','info');
+    }catch(e){showLoader(false);toast('Download failed: '+e.message,'err');}
+    return;
+  }
+  // Has key — decrypt then download
+  try{
+    showLoader(true,'Fetching & decrypting from IPFS…');
+    const{ivHex,enc}=await unpack(ipfs);
+    const plain=await decBuf(ivHex,enc,encKey);
+    const ext=fileName.split('.').pop().toLowerCase();
+    const mime={pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',txt:'text/plain',mp4:'video/mp4',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}[ext]||'application/octet-stream';
+    triggerDownload(new Blob([plain],{type:mime}),fileName);
+    showLoader(false);
+    toast(`✅ "${fileName}" decrypted & downloaded!`,'ok');
+  }catch(e){showLoader(false);toast('Download failed: '+e.message,'err');}
+}
+
+function triggerDownload(blob,name){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=name;
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+}
+
+function showLoader(on,txt='Processing…'){document.getElementById('loaderTxt').textContent=txt;document.getElementById('loader').classList.toggle('on',on);}
+function toast(msg,type){const el=document.getElementById('toast');el.textContent=msg;el.className=`toast on t-${type}`;setTimeout(()=>el.classList.remove('on'),5000);}
+</script>
+</body>
+</html>
